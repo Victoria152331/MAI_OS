@@ -2,15 +2,16 @@
 #include <dlfcn.h>
 #include <sys/mman.h>
 #include <string.h>
-
-#include <stdio.h>
-
 #include "allocator.h"
 
 static allocator_create_func *allocator_create;
 static allocator_destroy_func *allocator_destroy;
 static allocator_alloc_func *allocator_alloc;
 static allocator_free_func *allocator_free;
+
+void print(char* msg) {
+    write(STDOUT_FILENO, msg, strlen(msg));
+}
 
 Allocator* create_impl(void *const memory, const size_t size) {
     (void) memory;
@@ -76,22 +77,26 @@ int main (int argc, char* argv[]) {
         allocator_alloc = &alloc_impl;
         allocator_free = &free_impl;
     }
-    printf("start\n");
+    print("start\n");
     void* memory = mmap(0, 1 << 16, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-    printf("mapped\n");
+    print("mapped\n");
     Allocator* all = allocator_create(memory, 1 << 16);
-    printf("allocator created\n");
+    print("allocator created\n");
     char* arr1 = allocator_alloc(all, 20);
-    printf("arr1 allocated %p\n", arr1);
+    print("arr1 allocated\n");
     char* arr2 = allocator_alloc(all, 10);
-    printf("arr2 allocated %p\n", arr2);
+    print("arr2 allocated\n");
     allocator_free(all, arr1);
-    printf("arr1 freed\n");
+    print("arr1 freed\n");
     arr1 = allocator_alloc(all, 12);
-    printf("arr1 allocated %p\n", arr1);
+    print("arr1 allocated\n");
     allocator_free(all, arr1);
     allocator_free(all, arr2);
     allocator_destroy(all);
-    printf("all is well\n");
     munmap(memory, 1 << 16);
+    if (library) {
+        dlclose(library);
+    }
+    print("all is well\n");
+    return 0;
 }
